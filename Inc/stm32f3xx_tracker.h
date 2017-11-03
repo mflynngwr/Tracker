@@ -60,11 +60,13 @@
 #define PWM_TIMER_DC_INIT       0           /*  */
 #define UTILITY_TIMER_PRESCALE  36000-1     /* Yields 2KHz clock to timer      */
 #define UTILITY_TIMER_PERIOD    100-1       /* 50 ms timer                     */
-
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
 
+#define NUCLEO_BTN_Pin GPIO_PIN_13
+#define NUCLEO_BTN_GPIO_Port GPIOC
+#define NUCLEO_BTN_EXTI_IRQn EXTI15_10_IRQn
 #define PAN_PWM_Pin GPIO_PIN_0
 #define PAN_PWM_GPIO_Port GPIOA
 #define TILT_PWM_Pin GPIO_PIN_1

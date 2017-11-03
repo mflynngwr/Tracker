@@ -126,6 +126,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 #ifndef TRACKER_APP
 
+   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
+   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_2);
+   HAL_TIM_Base_Start(&htim2);
+   
+   HAL_Delay (5000);
+   
+   htim2.Instance->CCR1 = (int) (((double)PWM_TIMER_INIT) * 0.15);   
+   htim2.Instance->CCR2 = (int) (((double)PWM_TIMER_INIT) * 0.4);
+      
+
   while (1)
   {
 
@@ -257,7 +267,6 @@ static void MX_TIM2_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.Pulse = PWM_TIMER_DC_INIT;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -363,6 +372,12 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(POWER_MGR_SCL_GPIO_Port, POWER_MGR_SCL_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin : NUCLEO_BTN_Pin */
+  GPIO_InitStruct.Pin = NUCLEO_BTN_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(NUCLEO_BTN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PAN_ENCODER_A_Pin FRONT_BTN_Pin */
   GPIO_InitStruct.Pin = PAN_ENCODER_A_Pin|FRONT_BTN_Pin;
