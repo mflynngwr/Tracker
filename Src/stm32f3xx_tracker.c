@@ -54,14 +54,7 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-#ifndef TRACKER_APP
-#define PWM_PERIOD (200-1)
-#define PWM_PRE_SCALE (36000-1)
-#define PAN_PWM_PULSE_INIT  0
-#define TILT_PWM_PULSE_INIT 0
-#define UTILITY_TIMER_PERIOD (100-1)
-#define UTILITY_TIMER_PRE_SCALE (36000-1)
-#endif
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -238,9 +231,9 @@ static void MX_TIM2_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = PWM_PERIOD_PRESCALE;
-  htim2.Init.CounterMode = TIM_COUNTERMODE_DOWN;
-  htim2.Init.Period = PWM_PERIOD;
+  htim2.Init.Prescaler = PWM_TIMER_PRESCALE_INIT;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = PWM_TIMER_INIT;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -255,8 +248,8 @@ static void MX_TIM2_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = PAN_PWM_INIT;
+  sConfigOC.OCMode = TIM_OCMODE_PWM2;
+  sConfigOC.Pulse = PWM_TIMER_DC_INIT;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -264,7 +257,7 @@ static void MX_TIM2_Init(void)
     _Error_Handler(__FILE__, __LINE__);
   }
 
-  sConfigOC.Pulse = TILT_PWM_INIT;
+  sConfigOC.Pulse = PWM_TIMER_DC_INIT;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
     _Error_Handler(__FILE__, __LINE__);
@@ -360,14 +353,16 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, TILT_DIR_Pin|TILT_DIRn_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, TILT_DIR_Pin|TILT_DIRn_Pin|PAN_DIR_Pin|PAN_DIRn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MODE_LED_Pin|RS_RESETn_Pin|MOTOR_PWRSAVE_Pin|POWER_MGR_SCL_Pin 
-                          |POWER_MGR_SDA_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MODE_LED_Pin|RS_RESETn_Pin|MOTOR_PWRSAVE_Pin|POWER_MGR_SDA_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, FRONT_LED_Pin|PAN_DIR_Pin|PAN_DIRn_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(POWER_MGR_SCL_GPIO_Port, POWER_MGR_SCL_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : PAN_ENCODER_A_Pin FRONT_BTN_Pin */
   GPIO_InitStruct.Pin = PAN_ENCODER_A_Pin|FRONT_BTN_Pin;
@@ -417,7 +412,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : POWER_MGR_SCL_Pin */
   GPIO_InitStruct.Pin = POWER_MGR_SCL_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(POWER_MGR_SCL_GPIO_Port, &GPIO_InitStruct);

@@ -31,13 +31,15 @@
  *
  *****************************************************************************/
 
+#define TRACKER_SYS_CLOCK  72000000
 #define MAX_TIME_VAL_MS 0x7FFFFFFFU
-#define PWM_PERIOD_PRESCALE  36000-1     /* Yields 2KHz clock to PWM period */
-#define PWM_PERIOD 200                   /* 100 ms PWM period               */
-#define PAN_PWM_INIT  0                  /*  */
-#define TILT_PWM_INIT 0                  /*  */
-#define UTILITY_TIMER_PRESCALE 36000     /* Yields 2KHz clock to timer      */
-#define UTILITY_TIMER_PERIOD   100       /* 50 ms timer                     */
+
+#define PWM_PERIOD_DEFAULT     10          /* Default PWM Period (cycles/sec) */
+#define PWM_DUTYCYCLE_DEFAULT   0          /* Default PWM Duty Cycle          */
+#define PWM_PERIOD_MIN          1          /* Motor PWM Minimum Period        */
+#define PWM_PERIOD_MAX        100          /* Motor PWM Maximum Period        */
+#define PWM_DUTYCYCLE_MIN       0          /* Motor Duty Cycle Minimum        */
+#define PWM_DUTYCYCLE_MAX     100          /* Motor Duty Cycle Maximum        */
 
 
 /******************************************************************************
@@ -63,25 +65,27 @@ typedef unsigned int tEventStatus;
 
 typedef enum 
 {
-	EmptyEvent     = 0x1000000,
-	Debug          = 0x1010000,
-	DebugEvent1    = 0x1010001,
-	DebugEvent2    = 0x1010002,
-	FrontButton    = 0x1020000,
-	FrontButtonUp  = 0x1020001,
-	FrontButtonDn  = 0x1020002,
-	ModeButton     = 0x1030000,
-	ModeButtonUp   = 0x1030001,
-	ModeButtonDn   = 0x1030002,
-	Encoder        = 0x1040000,
-	EncoderUpdate  = 0x1040001,
-	Zigbee         = 0x1050000,
-	ZigbeeInput    = 0x1050001,
-	WiFi           = 0x1060000,
-	WiFiInput      = 0x1060001,
-	Repeat         = 0x8000000,
-	NoRepeat       = 0x0000000,
-	EventGroupMask = 0xFFF0000
+	EmptyEvent      = 0x1000000,
+    TimeOut         = 0x1000001,
+	Debug           = 0x1010000,
+	Debug1          = 0x1010001,
+	Debug2          = 0x1010002,
+	FrontButton     = 0x1020000,
+	FrontButtonUp   = 0x1020001,
+	FrontButtonDn   = 0x1020002,
+	ModeButton      = 0x1030000,
+	ModeButtonUp    = 0x1030001,
+	ModeButtonDn    = 0x1030002,
+	MotorOp         = 0x1040000,
+	MotorOpFinish   = 0x1040001,
+	MotorOpTest     = 0x10400FF,
+	TiltOpFinish    = 0x1040003,
+	EncoderOp       = 0x1040000,
+	GPS             = 0x1060000,
+	GPSUpdate       = 0x1060001,
+	WiFi            = 0x1080000,
+	WiFiInput       = 0x1080001,
+	EventGroupMask  = 0xFFF0000
 } tEventIDs;
 
 typedef unsigned int tEventID;
@@ -115,11 +119,47 @@ typedef struct
 
 /******************************************************************************
  *
- * Tracker interface function declarations (platform independent
+ * Tracker Motor Control declarations
+ *
+ *****************************************************************************/
+typedef enum 
+{
+	NoDir,
+	CW,
+	CCW,
+	Brake
+} tMotorDirs;
+
+typedef enum 
+{
+	MotorEnabled,
+	MotorDisabled,
+	MotorOpPending,
+	NoMotorOpPending,
+} tMotorStates;
+
+typedef unsigned int tMotorDir;
+typedef unsigned int tMotorState;
+
+typedef struct
+{
+   int         curPeriod;
+   int         curDutyCycle[2];
+   int         nextDutyCycle[2];
+   tMotorDir   curDir[2];
+   tMotorDir   nextDir[2];
+   tMotorState stateMotor;
+   tMotorState statePWM[2];
+} tMotorControl;
+
+/******************************************************************************
+ *
+ * Tracker interface function declarations
  *
  *****************************************************************************/
 
 void Tracker_IF_Init (void);
+void Tracker_MotorCtl_Init (void);
 
 tEventStatus queueEvent (tEventID event);
 tEventID dequeueEvent (void);
@@ -133,5 +173,20 @@ void waitEvent  (timeMS time_ms);
 void checkTimer (void);
 timeMS getTime  (void);
 void startPWM   (void);
+
+void enableMotorOp (int period);
+void disableMotorOp (void);
+void setPowerSave (bool pwrsave);
+void setPWMPeriod (int period);
+void setPanDir (tMotorDir dir, int dutycylcle);
+void setTiltDir (tMotorDir dir, int dutycylcle);
+void motorEvent (tEventID event);
+void initMotorControl (void);
+
+void platformPWMInit (void);
+tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle);
+tMotorState platformSetPanDir (tMotorDir dir, int dutyCycle);
+tMotorState platformSetTiltDir (tMotorDir dir, int dutyCycle);
+tMotorState platformPWMEnable (int period);
 
 #endif

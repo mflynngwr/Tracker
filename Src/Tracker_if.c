@@ -42,6 +42,9 @@ void Tracker_IF_Init (void)
       timers.event[i] = EmptyEvent;
    }
       timers.next[TIMER_LIST_SIZE-1] = -1;
+   
+   initMotorControl ();
+
 }
 
 //*****************************************************************************

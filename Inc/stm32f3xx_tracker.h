@@ -54,6 +54,13 @@
 #define HAL_PWR_MODULE_ENABLED
 #define HAL_CORTEX_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
+
+#define PWM_TIMER_PRESCALE_INIT 36000-1     /* Yields 2KHz clock to PWM period */
+#define PWM_TIMER_INIT          200-1       /* 100 ms PWM period               */
+#define PWM_TIMER_DC_INIT       0           /*  */
+#define UTILITY_TIMER_PRESCALE  36000-1     /* Yields 2KHz clock to timer      */
+#define UTILITY_TIMER_PERIOD    100-1       /* 50 ms timer                     */
+
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/

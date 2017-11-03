@@ -389,6 +389,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\Tracker_if.c</FilePath>
             </File>
+            <File>
+              <FileName>Tracker_MotorCtl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\Tracker_MotorCtl.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -466,6 +471,11 @@
               <FileName>stm32f3xx_tracker.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Src\stm32f3xx_tracker.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f3xx_motorctl.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\stm32f3xx_motorctl.c</FilePath>
             </File>
             <File>
               <FileName>stm32f3xx_hal_msp.c</FileName>

@@ -19,13 +19,13 @@ int main (void)
    Tracker_Platform_Init ();
    Tracker_IF_Init ();
 
-   startPWM ();
+//   startPWM ();
    
 //   testEventQ();
 //   testTimers();
    
-   startTimer (DebugEvent1, 256, Repeat);
-   startTimer (DebugEvent2, 768, Repeat);
+//   startTimer (Debug1, 256, true);
+//   startTimer (Debug2, 768, true);
    
    while (1)
    {      
@@ -39,10 +39,13 @@ int main (void)
             task1 (event);
             break;
          
+         case MotorOp:
+            motorEvent (event);
+            break;
+         
          case FrontButton:
          case ModeButton:
-         case Encoder:
-         case Zigbee:
+         case GPS:
          case WiFi:
             task2 (event);
             break;
@@ -57,10 +60,10 @@ void task1 (tEventID event)
 {
    switch (event)
    {
-      case DebugEvent1:
+      case Debug1:
          DEBUG_PRINT(dbgmsg1);
          break;
-      case DebugEvent2:
+      case Debug2:
          DEBUG_PRINT(dbgmsg2);
          break;
    }
@@ -75,7 +78,7 @@ void testEventQ (void)
 {
    queueEvent (FrontButtonUp);
    queueEvent (ModeButtonUp);
-   queueEvent (Zigbee);
+   queueEvent (GPS);
    queueEvent (WiFi);
    queueEvent (Encoder);
    dequeueEvent ();
@@ -93,14 +96,14 @@ void testTimers (void)
 {
    startTimer (FrontButton, 500, NoRepeat);
    startTimer (ModeButton, 600, NoRepeat);
-   startTimer (Zigbee, 400, NoRepeat);
+   startTimer (GPS, 400, NoRepeat);
    startTimer (WiFi, 700, NoRepeat);
    startTimer (Encoder, 500, NoRepeat);
-   stopTimer (Zigbee);
-   stopTimer (FrontButton);
-   stopTimer (WiFi);
+   stopTimer  (GPS);
+   stopTimer  (FrontButton);
+   stopTimer  (WiFi);
    startTimer (FrontButton, 500, Repeat);
-   stopTimer (FrontButton);
+   stopTimer  (FrontButton);
 }
 #endif
 
