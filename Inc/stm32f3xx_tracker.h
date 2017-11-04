@@ -55,11 +55,13 @@
 #define HAL_CORTEX_MODULE_ENABLED
 #define HAL_I2C_MODULE_ENABLED
 
-#define PWM_TIMER_PRESCALE_INIT 36000-1     /* Yields 2KHz clock to PWM period */
-#define PWM_TIMER_INIT          200-1       /* 100 ms PWM period               */
-#define PWM_TIMER_DC_INIT       0           /*  */
-#define UTILITY_TIMER_PRESCALE  36000-1     /* Yields 2KHz clock to timer      */
-#define UTILITY_TIMER_PERIOD    100-1       /* 50 ms timer                     */
+#define PWM_PERIOD_CNT    200                // 200 counts per period
+#define PWM_PRESCALE_MAX  36000              // Establish max for calculations
+#define PWM_PSCL_INIT     PWM_PRESCALE_MAX-1 // Yields 2KHz PWM period clock
+#define PWM_INIT          PWM_PERIOD_CNT-1   // 100 ms PWM period
+#define PWM_DC_INIT       0                  //
+#define UTILITY_PRESCALE  36000-1            // Yields 2KHz clock to timer
+#define UTILITY_PERIOD    100-1              // 50 ms timer
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -122,8 +124,13 @@
 #define DEBUG_TMS_GPIO_Port GPIOA
 #define DEBUG_CLK_Pin GPIO_PIN_14
 #define DEBUG_CLK_GPIO_Port GPIOA
+#define TEST_PT_IN_Pin GPIO_PIN_15
+#define TEST_PT_IN_GPIO_Port GPIOA
+#define TEST_PT_IN_EXTI_IRQn EXTI15_10_IRQn
 #define DEGUB_SWO_Pin GPIO_PIN_3
 #define DEGUB_SWO_GPIO_Port GPIOB
+#define TEST_PT_OUT_Pin GPIO_PIN_4
+#define TEST_PT_OUT_GPIO_Port GPIOB
 #define MOTOR_PWRSAVE_Pin GPIO_PIN_5
 #define MOTOR_PWRSAVE_GPIO_Port GPIOB
 #define RS_TX_Pin GPIO_PIN_6

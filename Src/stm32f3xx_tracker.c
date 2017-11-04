@@ -132,8 +132,8 @@ int main(void)
    
    HAL_Delay (5000);
    
-   htim2.Instance->CCR1 = (int) (((double)PWM_TIMER_INIT) * 0.15);   
-   htim2.Instance->CCR2 = (int) (((double)PWM_TIMER_INIT) * 0.4);
+   htim2.Instance->CCR1 = (int) (((double)PWM_INIT+1) * 0.15);   
+   htim2.Instance->CCR2 = (int) (((double)PWM_INIT+1) * 0.4);
       
 
   while (1)
@@ -241,9 +241,9 @@ static void MX_TIM2_Init(void)
   TIM_OC_InitTypeDef sConfigOC;
 
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = PWM_TIMER_PRESCALE_INIT;
+  htim2.Init.Prescaler = PWM_PSCL_INIT;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = PWM_TIMER_INIT;
+  htim2.Init.Period = PWM_INIT;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
@@ -259,7 +259,7 @@ static void MX_TIM2_Init(void)
   }
 
   sConfigOC.OCMode = TIM_OCMODE_PWM2;
-  sConfigOC.Pulse = PWM_TIMER_DC_INIT;
+  sConfigOC.Pulse = PWM_DC_INIT;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -283,9 +283,9 @@ static void MX_TIM6_Init(void)
   TIM_MasterConfigTypeDef sMasterConfig;
 
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = UTILITY_TIMER_PRESCALE;
+  htim6.Init.Prescaler = UTILITY_PRESCALE;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = UTILITY_TIMER_PERIOD;
+  htim6.Init.Period = UTILITY_PERIOD;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -365,7 +365,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(GPIOA, TILT_DIR_Pin|TILT_DIRn_Pin|PAN_DIR_Pin|PAN_DIRn_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, MODE_LED_Pin|RS_RESETn_Pin|MOTOR_PWRSAVE_Pin|POWER_MGR_SDA_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MODE_LED_Pin|RS_RESETn_Pin|TEST_PT_OUT_Pin|MOTOR_PWRSAVE_Pin 
+                          |POWER_MGR_SDA_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
@@ -385,8 +386,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : POWER_BTN_Pin RS_SPI_IRQ_Pin */
-  GPIO_InitStruct.Pin = POWER_BTN_Pin|RS_SPI_IRQ_Pin;
+  /*Configure GPIO pins : POWER_BTN_Pin RS_SPI_IRQ_Pin TEST_PT_IN_Pin */
+  GPIO_InitStruct.Pin = POWER_BTN_Pin|RS_SPI_IRQ_Pin|TEST_PT_IN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -411,8 +412,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
   HAL_GPIO_Init(MODE_LED_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : RS_RESETn_Pin MOTOR_PWRSAVE_Pin POWER_MGR_SDA_Pin */
-  GPIO_InitStruct.Pin = RS_RESETn_Pin|MOTOR_PWRSAVE_Pin|POWER_MGR_SDA_Pin;
+  /*Configure GPIO pins : RS_RESETn_Pin TEST_PT_OUT_Pin MOTOR_PWRSAVE_Pin POWER_MGR_SDA_Pin */
+  GPIO_InitStruct.Pin = RS_RESETn_Pin|TEST_PT_OUT_Pin|MOTOR_PWRSAVE_Pin|POWER_MGR_SDA_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
