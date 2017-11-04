@@ -176,9 +176,8 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
    htim2.Instance->CR1 |= TIM_CR1_UDIS;
    
    // Calculate the inactive percentage of duty cycle
-   dutyCycle = (dutyCycle == 0) ? 101 : 100 - dutyCycle;
+   dutyCycle = 100 - dutyCycle;
    dutyCycle = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
-   dutyCycle = (dutyCycle <= 1) ? 0 : dutyCycle - 1;
    
    // Update timer duty cycle
    if (idx == 0)
