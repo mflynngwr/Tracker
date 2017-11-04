@@ -145,11 +145,8 @@ typedef struct
 {
    int         curPeriod;
    int         curDutyCycle[2];
-   int         nextDutyCycle[2];
    tMotorDir   curDir[2];
-   tMotorDir   nextDir[2];
    tMotorState stateMotor;
-   tMotorState statePWM[2];
 } tMotorControl;
 
 /******************************************************************************
@@ -185,8 +182,6 @@ void initMotorControl (void);
 
 void platformPWMInit (void);
 tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle);
-tMotorState platformSetPanDir (tMotorDir dir, int dutyCycle);
-tMotorState platformSetTiltDir (tMotorDir dir, int dutyCycle);
 tMotorState platformPWMEnable (int period);
 
 #endif

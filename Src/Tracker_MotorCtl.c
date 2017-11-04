@@ -12,14 +12,12 @@
 #include "Tracker_if.h"
 
 static void setPWMDir (int idx, tMotorDir dir, int dutyCycle); 
-static void finishMotorOp (void);
 static void testMotorOp  (void);
 
 static tMotorControl trackerMCtl;
 
 #define TEST_MOTOR_OP
 #ifdef TEST_MOTOR_OP
-static int finishMotorCnt = 0;
 static int testMotorCnt = 0;
 #endif
 
@@ -54,7 +52,7 @@ void motorEvent (tEventID event)
    switch (event)
    {
       case MotorOpFinish :
-         finishMotorOp ();
+         //finishMotorOp ();
          break;
       
 #ifdef TEST_MOTOR_OP      
@@ -153,32 +151,6 @@ void setPWMDir (int idx, tMotorDir dir, int dutyCycle)
    
    trackerMCtl.curDir[idx]  = dir;
    trackerMCtl.curDutyCycle[idx]  = dutyCycle;
-}
-
-//*****************************************************************************
-//*
-//* finishMotorOp
-//* ---
-//*
-//*****************************************************************************
-   
-void finishMotorOp (void)
-{
-   trackerMCtl.stateMotor = MotorEnabled;   
-   
-   if (trackerMCtl.nextDir[0] != NoDir)
-   {
-      setPanDir (trackerMCtl.nextDir[0], trackerMCtl.nextDutyCycle[0]);
-   }
-   
-   if (trackerMCtl.nextDir[1] != NoDir)
-   {
-      setTiltDir (trackerMCtl.nextDir[1], trackerMCtl.nextDutyCycle[1]);
-   }
-   
-#ifdef TEST_MOTOR_OP
-   finishMotorCnt++;
-#endif
 }
 
 #ifdef TEST_MOTOR_OP
