@@ -326,11 +326,18 @@ void USART2_IRQHandler(void)
 void EXTI15_10_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI15_10_IRQn 0 */
-
+  if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13) != RESET)
+  {
+    // Set Test Trigger
+    HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_SET); 
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
+    queueEvent (MotorOpTest);
+  }
   /* USER CODE END EXTI15_10_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
   /* USER CODE BEGIN EXTI15_10_IRQn 1 */
-
+  // Reset Test Trigger
+  HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
   /* USER CODE END EXTI15_10_IRQn 1 */
 }
 

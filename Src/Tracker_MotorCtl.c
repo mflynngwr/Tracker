@@ -40,10 +40,6 @@ void initMotorControl (void)
    trackerMCtl.curDutyCycle[1]  = PWM_DUTYCYCLE_DEFAULT;
    
    platformPWMInit ();  
-
-#ifdef TEST_MOTOR_OP   
-   startTimer (MotorOpTest, 5000, false);  
-#endif   
 }
 
 //*****************************************************************************
@@ -195,39 +191,39 @@ void finishMotorOp (void)
    
 void testMotorOp (void)
 {
-   int dcPan = 0;
-   int dcTilt = 100;
-   switch (testMotorCnt % 7)
+   static int dcPan = 0;
+   static int dcTilt = 0;
+   static int mtrPeriod = 0;
+   
+   switch (testMotorCnt)
    {
       case 0:
-         enableMotorOp ((trackerMCtl.curPeriod + 10) % 100);
+         enableMotorOp (mtrPeriod);
+         mtrPeriod = (mtrPeriod + 10) % 100;
+         setPanDir  (NoDir, 50);
+         setTiltDir (Brake, 50);
          break;
       case 1:
-         setPanDir (CW, ((trackerMCtl.curDutyCycle[0] + 10) % 100));
-         break;
       case 2:
-         setTiltDir (CCW, ((trackerMCtl.curDutyCycle[1] + 10) % 100));
-         break;
       case 3:
-         setPanDir (CCW, ((trackerMCtl.curDutyCycle[0] + 10) % 100));
-         break;
       case 4:
-         setTiltDir (CW, ((trackerMCtl.curDutyCycle[1] - 10) % 100));
-         break;
       case 5:
-         setPanDir (NoDir, ((trackerMCtl.curDutyCycle[0] - 5) % 100));
-         break;
       case 6:
-         setTiltDir (Brake, ((trackerMCtl.curDutyCycle[1] - 10) % 100));
+      case 7:
+      case 8:
+      case 9:
+      case 10:
+         setPanDir  (CW, dcPan);
+         setTiltDir (CCW, dcTilt);
+         dcPan  = (dcPan + 10) % 100;
+         dcTilt = (dcTilt + 90) % 100;
          break;
       default:
          break;
    }
    
-   startTimer (MotorOpTest, 60000, false);
+   //startTimer (MotorOpTest, 60000, false);
    
-   testMotorCnt = ++testMotorCnt % 7;
-   dcPan = (dcPan + 10) % 100;
-   dcTilt = (dcTilt + 90) % 100;
+   testMotorCnt = (testMotorCnt + 1) % 11;
 }
 #endif

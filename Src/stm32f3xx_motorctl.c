@@ -18,7 +18,6 @@
 static int curPreScaleCnt = PWM_PRESCALE_MAX;
 static int curPeriodCnt   = PWM_PERIOD_DIVISOR;
 
-static int curDC[2] = {PWM_TIMER_DC_INIT, PWM_TIMER_DC_INIT};
 static tMotorDir curDir[2] = {NoDir, NoDir};
 
 static unsigned int pwmDIR[2]  = {PAN_DIR_Pin,  TILT_DIR_Pin};
@@ -60,8 +59,6 @@ void platformPWMInit (void)
    htim2.Instance->CCR2 = PWM_PERIOD_DIVISOR;
    curPreScaleCnt = PWM_PRESCALE_MAX;
    curPeriodCnt   = PWM_PERIOD_DIVISOR;
-   curDC[0] = PWM_PERIOD_DIVISOR;
-   curDC[1] = PWM_PERIOD_DIVISOR;
    
    // Start the PWM Timer
    HAL_TIM_OC_Start (&htim2, TIM_CHANNEL_1);
@@ -80,78 +77,69 @@ void platformPWMInit (void)
 
 tMotorState platformPWMEnable (int period)
 {
-   // Set Test Trigger
-   HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_SET);
-
+   // Confirm value of period is within the valid range
+   period = (period <= PWM_PERIOD_MIN) ? PWM_PERIOD_MIN : 
+            (period <= PWM_PERIOD_MAX) ? period : PWM_PERIOD_MAX;
+   
    // Configure Motor interface to Power Save Mode Off
    HAL_GPIO_WritePin (MOTOR_PWRSAVE_GPIO_Port, MOTOR_PWRSAVE_Pin, GPIO_PIN_SET);
-      
+   
+   // Calculate PWM timer clock divisor and overflow count values
    curPreScaleCnt = (int) ((float) (TRACKER_SYS_CLOCK / PWM_PERIOD_DIVISOR) / (float) period);
    curPeriodCnt   = PWM_PERIOD_DIVISOR;
    
+   // If calculated clock divisor is larger than maximum
+   // force the divisor to max value and calculate the overflow count
    if (curPreScaleCnt > PWM_PRESCALE_MAX)
    {
       curPreScaleCnt = PWM_PRESCALE_MAX;
       curPeriodCnt = (int) ((float) (TRACKER_SYS_CLOCK / PWM_PRESCALE_MAX) / (float) period);
-   }   
+   }
+   
+   // Disable update interupt when updating the duty cycle
+   htim2.Instance->CR1 |= TIM_CR1_UDIS;
 
    htim2.Instance->ARR  = curPeriodCnt-1;
    htim2.Instance->PSC  = curPreScaleCnt-1;   
-   htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
+   htim2.Instance->CR1 &= ~TIM_CR1_UDIS; 
    
-   // Set Test Trigger
-   HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
+   // Enable update event 
+   htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
    
    return MotorOpPending;
 }
 
 //*****************************************************************************
 //*
-//* platformSetPanDir
-//* ---
+//* platformSetDir
 //*
-//*****************************************************************************
-
-tMotorState platformSetPanDir (tMotorDir dir, int dutyCycle)
-{
-   curDC[0] = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
-   
-   htim2.Instance->CCR1 = (curDC[0] <= 1) ? 0 : curDC[0] - 1;  
-   htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
- 
-   return MotorOpPending;
-}
-
-//*****************************************************************************
+//* Platform specific Set Motor Direction (SetDir) Function
 //*
-//* platformSetTiltDir
-//* ---
+//* Affect the specified motor direction and update the pwm duty cycle.
+//* If no change in direction, only suty cycle will be updated.
+//* Index is motor selection id, Pan = 0, Tilt = 1
 //*
 //*****************************************************************************
 
 tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
 {
-   bool needUpdate = false;
-   int  newDC;
-   
-   // Set Test Trigger
-   HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_SET);
+   tMotorState rtnState = NoMotorOpPending;
    
    switch (dir)
    {
       case NoDir :
-         dutyCycle =-1;
+         dutyCycle = 0;
          break;
       case CW :
          if (curDir[idx] == CCW)
          {
-            // Set PWM DIR, set update flag to true
+            // Set PWM DIR signal, direction change deferred to update interrupt
             HAL_GPIO_WritePin (pwmDIRPort[idx], pwmDIR[idx], GPIO_PIN_SET);
-            needUpdate = true;
+            rtnState = MotorOpPending;
          }
          else
          {
-            // Reset DIRn
+            // Reset PWM DIRn signal
             HAL_GPIO_WritePin (pwmDIRnPort[idx], pwmDIRn[idx], GPIO_PIN_RESET);
          }
          curDir[idx] = CW;
@@ -160,13 +148,13 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
       case CCW :
          if (curDir[idx] == CW)
          {
-            // Set DIRn, set update flag to true
+            // Set PWM DIRn, direction change deferred to update interrupt
             HAL_GPIO_WritePin (pwmDIRnPort[idx], pwmDIRn[idx], GPIO_PIN_SET);
-            needUpdate = true;
+            rtnState = MotorOpPending;
          }
          else
          {
-            // Reset DIR
+            // Reset PWM DIR signal
             HAL_GPIO_WritePin (pwmDIRPort[idx], pwmDIR[idx], GPIO_PIN_RESET);
          }
          curDir[idx] = CCW;
@@ -174,42 +162,38 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
          
       case Brake :
          dutyCycle = 100;
-         // Set DIR, set DIRn
+      
+         // Set PWM DIR and PWM DIRn signals
          HAL_GPIO_WritePin (pwmDIRPort[idx], pwmDIR[idx], GPIO_PIN_SET);
          HAL_GPIO_WritePin (pwmDIRnPort[idx], pwmDIRn[idx], GPIO_PIN_SET);
+      
          curDir[idx] = Brake;
          break;
       default :
          break;
    }
-   // Avoid update interupt when updating timer compare register
+   // Disable update interupt when updating the duty cycle
    htim2.Instance->CR1 |= TIM_CR1_UDIS;
    
-   // Calculate duty cycle
-   dutyCycle = 100 - dutyCycle;
-   newDC = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
-   curDC[idx] = newDC;
+   // Calculate the inactive percentage of duty cycle
+   dutyCycle = (dutyCycle == 0) ? 101 : 100 - dutyCycle;
+   dutyCycle = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
+   dutyCycle = (dutyCycle <= 1) ? 0 : dutyCycle - 1;
    
    // Update timer duty cycle
    if (idx == 0)
    {
-      htim2.Instance->CCR1 = (newDC <= 1) ? 0 : newDC - 1;
+      htim2.Instance->CCR1 = dutyCycle;
    }
    else
    {
-      htim2.Instance->CCR2 = (newDC <= 1) ? 0 : newDC - 1;
+      htim2.Instance->CCR2 = dutyCycle;
    }
    
-   // Enable update event if needed
-   if (needUpdate)
-   {
-      htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
-   }
+   // Enable update event 
+   htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
    
-   // Set Test Trigger
-   HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
- 
-   return MotorOpPending;
+   return rtnState;
 }
 
 //*****************************************************************************
@@ -228,7 +212,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       // Set Pan DIRn Low
       HAL_GPIO_WritePin (PAN_DIRn_GPIO_Port, PAN_DIRn_Pin, GPIO_PIN_RESET);
    }
-   if (curDir[0] == CCW)
+   else if (curDir[0] == CCW)
    {
       // Set Pan DIR Low
       HAL_GPIO_WritePin (PAN_DIR_GPIO_Port, PAN_DIR_Pin, GPIO_PIN_RESET);
@@ -238,7 +222,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       // Set Tilt DIRn Low
       HAL_GPIO_WritePin (TILT_DIRn_GPIO_Port, TILT_DIRn_Pin, GPIO_PIN_RESET);
    }
-   if (curDir[1] == CCW)
+   else if (curDir[1] == CCW)
    {
       // Set Tilt DIR Low
       HAL_GPIO_WritePin (TILT_DIR_GPIO_Port, TILT_DIR_Pin, GPIO_PIN_RESET);
@@ -246,6 +230,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
    
    //queueEvent (MotorOpFinish);
    
-   // Disable further timer update interrupt
+   // Disable further timer update interrupts
    htim2.Instance->CR1 |= TIM_CR1_UDIS;
 }
