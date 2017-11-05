@@ -18,7 +18,8 @@
 static int curPreScaleCnt = PWM_PRESCALE_MAX;
 static int curPeriodCnt   = PWM_PERIOD_DIVISOR;
 
-static tMotorDir curDir[2] = {NoDir, NoDir};
+static int curDC[2];
+static tMotorDir curDir[2];
 
 static unsigned int pwmDIR[2]  = {PAN_DIR_Pin,  TILT_DIR_Pin};
 static unsigned int pwmDIRn[2] = {PAN_DIRn_Pin, TILT_DIRn_Pin};
@@ -30,23 +31,27 @@ static int cntCallback = 0;
 
 //*****************************************************************************
 //*
-//* platformPWMInit
-//* ---
+//* pfPWMInit
+//* Platform Initialization
 //*
 //*****************************************************************************
 
-void platformPWMInit (void)
+void pfPWMInit (void)
 {
    // Configure Motor interface to Power Save Mode
    HAL_GPIO_WritePin (MOTOR_PWRSAVE_GPIO_Port, MOTOR_PWRSAVE_Pin, GPIO_PIN_RESET);
    
-   // Configure Pan and Tilt to NoDir state   
+   // Configure Pan and Tilt to NoDir state
+   // TODO : Consider move DIR/DIRn control to application level   
    HAL_GPIO_WritePin (PAN_DIR_GPIO_Port,   PAN_DIR_Pin,   GPIO_PIN_SET);
    HAL_GPIO_WritePin (PAN_DIRn_GPIO_Port,  PAN_DIRn_Pin,  GPIO_PIN_SET);
    HAL_GPIO_WritePin (TILT_DIR_GPIO_Port,  TILT_DIR_Pin,  GPIO_PIN_SET);
    HAL_GPIO_WritePin (TILT_DIRn_GPIO_Port, TILT_DIRn_Pin, GPIO_PIN_SET);
-   curDir[0] = NoDir;
-   curDir[1] = NoDir;
+   
+   curDir[PAN_IDX] = NoDir;
+   curDir[TILT_IDX] = NoDir;
+   curDC[PAN_IDX] = PWM_DUTYCYCLE_DEFAULT;
+   curDC[TILT_IDX] = PWM_DUTYCYCLE_DEFAULT;
    
    // Clear any pending interrupts 
    htim2.Instance->SR   = ~TIM_FLAG_UPDATE;
@@ -70,19 +75,46 @@ void platformPWMInit (void)
 
 //*****************************************************************************
 //*
-//* platformPWMEnable
+//* pfPWMEnable
+//* Platform Motor Operation Enable
+//*
+//*****************************************************************************
+
+void pfPWMEnable (void)
+{   
+   // Configure Motor interface to Power Save Mode Off
+   HAL_GPIO_WritePin (MOTOR_PWRSAVE_GPIO_Port, MOTOR_PWRSAVE_Pin, GPIO_PIN_SET);
+}
+
+//*****************************************************************************
+//*
+//* pfPWMDisable
+//* Platform Motor Operation Disable
 //* ---
 //*
 //*****************************************************************************
 
-tMotorState platformPWMEnable (int period)
+void pfPWMDisable (void)
+{   
+   // Configure Motor interface to Power Save Mode On
+   HAL_GPIO_WritePin (MOTOR_PWRSAVE_GPIO_Port, MOTOR_PWRSAVE_Pin, GPIO_PIN_RESET);
+}
+
+//*****************************************************************************
+//*
+//* pfPWMEnable
+//* ---
+//*
+//*****************************************************************************
+
+void pfSetPeriod (int period)
 {
+   int dutyCycle;
+   
    // Confirm value of period is within the valid range
+   // TODO : Consider move this logic to application level
    period = (period <= PWM_PERIOD_MIN) ? PWM_PERIOD_MIN : 
             (period <= PWM_PERIOD_MAX) ? period : PWM_PERIOD_MAX;
-   
-   // Configure Motor interface to Power Save Mode Off
-   HAL_GPIO_WritePin (MOTOR_PWRSAVE_GPIO_Port, MOTOR_PWRSAVE_Pin, GPIO_PIN_SET);
    
    // Calculate PWM timer clock divisor and overflow count values
    curPreScaleCnt = (int) ((float) (TRACKER_SYS_CLOCK / PWM_PERIOD_DIVISOR) / (float) period);
@@ -101,17 +133,25 @@ tMotorState platformPWMEnable (int period)
 
    htim2.Instance->ARR  = curPeriodCnt-1;
    htim2.Instance->PSC  = curPreScaleCnt-1;   
-   htim2.Instance->CR1 &= ~TIM_CR1_UDIS; 
+   htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
+   
+   // Update PAN duty cycle for new period
+   dutyCycle = 100 - curDC[PAN_IDX];
+   dutyCycle = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
+   htim2.Instance->CCR1 = dutyCycle;
+   
+   // Update TILT duty cycle for new period
+   dutyCycle = 100 - curDC[TILT_IDX];
+   dutyCycle = (int) ((float)(curPeriodCnt * dutyCycle) / 100.0F);
+   htim2.Instance->CCR2 = dutyCycle;
    
    // Enable update event 
    htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
-   
-   return MotorOpPending;
 }
 
 //*****************************************************************************
 //*
-//* platformSetDir
+//* pfSetDir
 //*
 //* Platform specific Set Motor Direction (SetDir) Function
 //*
@@ -121,10 +161,8 @@ tMotorState platformPWMEnable (int period)
 //*
 //*****************************************************************************
 
-tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
+void pfSetDir (int idx, tMotorDir dir, int dutyCycle)
 {
-   tMotorState rtnState = NoMotorOpPending;
-   
    switch (dir)
    {
       case NoDir :
@@ -135,7 +173,6 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
          {
             // Set PWM DIR signal, direction change deferred to update interrupt
             HAL_GPIO_WritePin (pwmDIRPort[idx], pwmDIR[idx], GPIO_PIN_SET);
-            rtnState = MotorOpPending;
          }
          else
          {
@@ -150,7 +187,6 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
          {
             // Set PWM DIRn, direction change deferred to update interrupt
             HAL_GPIO_WritePin (pwmDIRnPort[idx], pwmDIRn[idx], GPIO_PIN_SET);
-            rtnState = MotorOpPending;
          }
          else
          {
@@ -172,6 +208,10 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
       default :
          break;
    }
+   
+   // Save current duty cycle
+   curDC[idx] = dutyCycle;
+   
    // Disable update interupt when updating the duty cycle
    htim2.Instance->CR1 |= TIM_CR1_UDIS;
    
@@ -191,8 +231,6 @@ tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle)
    
    // Enable update event 
    htim2.Instance->CR1 &= ~TIM_CR1_UDIS;
-   
-   return rtnState;
 }
 
 //*****************************************************************************
@@ -227,7 +265,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
       HAL_GPIO_WritePin (TILT_DIR_GPIO_Port, TILT_DIR_Pin, GPIO_PIN_RESET);
    }
    
-   //queueEvent (MotorOpFinish);
+   queueEvent (MotorOpFinish);
    
    // Disable further timer update interrupts
    htim2.Instance->CR1 |= TIM_CR1_UDIS;

@@ -12,7 +12,8 @@
 #include "Tracker_if.h"
 
 static void setPWMDir (int idx, tMotorDir dir, int dutyCycle); 
-static void testMotorOp  (void);
+static void testMotorOp (void); 
+static void finishMotorOp (void);
 
 static tMotorControl trackerMCtl;
 
@@ -30,14 +31,19 @@ static int testMotorCnt = 0;
    
 void initMotorControl (void)
 {
-   trackerMCtl.curDir[0]   = NoDir;
-   trackerMCtl.curDir[1]   = NoDir;
-   trackerMCtl.curPeriod   = PWM_PERIOD_DEFAULT;
+   pfPWMInit ();  
    
-   trackerMCtl.curDutyCycle[0]  = PWM_DUTYCYCLE_DEFAULT;
-   trackerMCtl.curDutyCycle[1]  = PWM_DUTYCYCLE_DEFAULT;
+   disableMotorOp ();
    
-   platformPWMInit ();  
+   pfSetPeriod (PWM_PERIOD_DEFAULT);
+   
+   setPanDir (NoDir, PWM_DUTYCYCLE_DEFAULT);
+   setTiltDir (NoDir, PWM_DUTYCYCLE_DEFAULT);
+   setMotorPeriod (PWM_PERIOD_DEFAULT);
+      
+#ifdef TEST_MOTOR_OP      
+   startTimer (MotorOpTest, 5000, true);
+#endif
 }
 
 //*****************************************************************************
@@ -52,7 +58,7 @@ void motorEvent (tEventID event)
    switch (event)
    {
       case MotorOpFinish :
-         //finishMotorOp ();
+         finishMotorOp ();
          break;
       
 #ifdef TEST_MOTOR_OP      
@@ -72,8 +78,34 @@ void motorEvent (tEventID event)
 //* ---
 //*
 //*****************************************************************************
+
+void enableMotorOp (void)
+{
+   pfPWMEnable();
+   trackerMCtl.stateMotor = MotorEnabled;
+}
+
+//*****************************************************************************
+//*
+//* disableMotorOp
+//* ---
+//*
+//*****************************************************************************
    
-void enableMotorOp (int period)
+void disableMotorOp (void)
+{
+   pfPWMDisable();
+   trackerMCtl.stateMotor = MotorDisabled;
+}
+
+//*****************************************************************************
+//*
+//* setMotorPeriod
+//* ---
+//*
+//*****************************************************************************
+   
+void setMotorPeriod (int period)
 {
    if (period <= PWM_PERIOD_MIN)
    {
@@ -84,25 +116,9 @@ void enableMotorOp (int period)
       period = PWM_PERIOD_MAX;
    }
    
+   // Update PWM period
    trackerMCtl.curPeriod = period;
-   trackerMCtl.stateMotor = platformPWMEnable (period);
-}
-
-//*****************************************************************************
-//*
-//* disableMotorOp
-//* ---
-//*
-//*****************************************************************************
-   
-void disableMotorOp ()
-{
-   if (trackerMCtl.stateMotor != MotorDisabled)
-   {
-      initMotorControl ();
-   }
-   
-   trackerMCtl.stateMotor = MotorDisabled;
+   pfSetPeriod (trackerMCtl.curPeriod);
 }
 
 //*****************************************************************************
@@ -114,7 +130,7 @@ void disableMotorOp ()
    
 void setPanDir (tMotorDir dir, int dutyCycle)
 {
-   setPWMDir (0, dir, dutyCycle);
+   setPWMDir (PAN_IDX, dir, dutyCycle);
 }
 
 //*****************************************************************************
@@ -126,7 +142,7 @@ void setPanDir (tMotorDir dir, int dutyCycle)
    
 void setTiltDir (tMotorDir dir, int dutyCycle)
 {
-   setPWMDir (1, dir, dutyCycle);
+   setPWMDir (TILT_IDX, dir, dutyCycle);
 }
 
 //*****************************************************************************
@@ -147,10 +163,21 @@ void setPWMDir (int idx, tMotorDir dir, int dutyCycle)
       dutyCycle = PWM_DUTYCYCLE_MAX;
    }
 
-   trackerMCtl.stateMotor = platformSetDir (idx, dir, dutyCycle);
+   pfSetDir (idx, dir, dutyCycle);
    
    trackerMCtl.curDir[idx]  = dir;
    trackerMCtl.curDutyCycle[idx]  = dutyCycle;
+}
+
+//*****************************************************************************
+//*
+//* finishMotorOp
+//* ---
+//*
+//*****************************************************************************
+   
+void finishMotorOp (void)
+{
 }
 
 #ifdef TEST_MOTOR_OP
@@ -163,38 +190,46 @@ void setPWMDir (int idx, tMotorDir dir, int dutyCycle)
    
 void testMotorOp (void)
 {
-   static int dcPan = 0;
-   static int dcTilt = 0;
-   static int mtrPeriod = 0;
+   static int dcPan = 10;
+   static int dcTilt = 50;
+   static int dirPan = NoDir;
+   static int dirTilt = NoDir;
+   static int mtrPeriod = 1;
    
    switch (testMotorCnt)
    {
       case 0:
-         enableMotorOp (mtrPeriod);
-         mtrPeriod = (mtrPeriod + 10) % 100;
+         setMotorPeriod (mtrPeriod);
+         mtrPeriod = (mtrPeriod + 1) % 100;
          setPanDir  (NoDir, 50);
          setTiltDir (Brake, 50);
+         dcPan  = (dcPan + 91) % 100;
+         dcTilt = (dcTilt + 11) % 100;
          break;
+      
       case 1:
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-      case 6:
-      case 7:
-      case 8:
-      case 9:
-      case 10:
-         setPanDir  (CW, dcPan);
-         setTiltDir (CCW, dcTilt);
-         dcPan  = (dcPan + 10) % 100;
-         dcTilt = (dcTilt + 90) % 100;
+         dirPan = CW;
+         dirTilt = CCW;
          break;
+      
+      case 6:
+         dirPan = CCW;
+         dirTilt = CW;
+         break;
+      
+      case 10:
+         dirPan = CW;
+         dirTilt = CCW;
+         break;
+      
       default:
          break;
    }
    
-   //startTimer (MotorOpTest, 60000, false);
+   setPanDir  (dirPan, dcPan);
+   setTiltDir (dirTilt, dcTilt);
+   dcPan  = (dcPan + 10) % 100;
+   dcTilt = (dcTilt + 90) % 100;
    
    testMotorCnt = (testMotorCnt + 1) % 11;
 }

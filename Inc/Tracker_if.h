@@ -41,6 +41,9 @@
 #define PWM_DUTYCYCLE_MIN       0          /* Motor Duty Cycle Minimum        */
 #define PWM_DUTYCYCLE_MAX     100          /* Motor Duty Cycle Maximum        */
 
+#define PAN_IDX 0
+#define TILT_IDX 1
+ 
 
 /******************************************************************************
  *
@@ -122,7 +125,8 @@ typedef struct
  * Tracker Motor Control declarations
  *
  *****************************************************************************/
-typedef enum 
+
+ typedef enum 
 {
 	NoDir,
 	CW,
@@ -171,17 +175,19 @@ void checkTimer (void);
 timeMS getTime  (void);
 void startPWM   (void);
 
-void enableMotorOp (int period);
+void enableMotorOp (void);
 void disableMotorOp (void);
-void setPowerSave (bool pwrsave);
-void setPWMPeriod (int period);
+void setMotorPeriod (int period);
 void setPanDir (tMotorDir dir, int dutycylcle);
 void setTiltDir (tMotorDir dir, int dutycylcle);
 void motorEvent (tEventID event);
 void initMotorControl (void);
 
-void platformPWMInit (void);
-tMotorState platformSetDir (int idx, tMotorDir dir, int dutyCycle);
-tMotorState platformPWMEnable (int period);
+void pfPWMInit (void);
+void pfPWMEnable (void);
+void pfPWMDisable (void);
+void pfSetPeriod (int period);
+void pfSetDir (int idx, tMotorDir dir, int dutyCycle);
 
 #endif
+
