@@ -492,6 +492,11 @@
               <FileType>1</FileType>
               <FilePath>..\Src\stm32f3xx_if.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32f3xx_tracker_it.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\stm32f3xx_tracker_it.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
