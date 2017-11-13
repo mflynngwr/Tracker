@@ -82,19 +82,29 @@ typedef enum
 	MotorOp         = 0x1040000,
 	MotorOpFinish   = 0x1040001,
 	MotorOpTest     = 0x10400FF,
-	TiltOpFinish    = 0x1040003,
-	EncoderOp       = 0x1040000,
+	EncoderOp       = 0x1050000,
+	EncPanAOp 		= 0x1050001,
+	EncPanBOp       = 0x1050002,
+    EncTiltAOp      = 0x1050003,
+	EncTiltBOp      = 0x1050004,
 	GPS             = 0x1060000,
 	GPSUpdate       = 0x1060001,
 	WiFi            = 0x1080000,
 	WiFiInput       = 0x1080001,
+	ButtonOp		= 0x10A0000,
+	PowerBtnUp		= 0x10A0001,
+	PowerBtnDown	= 0x10A0002,
+	FrontBtnUp		= 0x10A0003,
+	FrontBtnDown	= 0x10A0004,
+	TestOp			= 0x10F0000,
+	TestOpTPIn		= 0x10F0001,
 	EventGroupMask  = 0xFFF0000
 } tEventIDs;
 
 typedef unsigned int tEventID;
 	
 // Event Queue size needs to be power of 2
-#define EVENT_QUEUE_SIZE 10U
+#define EVENT_QUEUE_SIZE 20U
 #define MINIMUM_EVENT_WAIT_TIME 10
 
 typedef struct
@@ -153,6 +163,12 @@ typedef struct
    tMotorState stateMotor;
 } tMotorControl;
 
+typedef struct
+{
+	int cntPan;
+	int cntTilt;
+} tEncoderState;
+
 /******************************************************************************
  *
  * Tracker interface function declarations
@@ -188,6 +204,11 @@ void pfPWMEnable (void);
 void pfPWMDisable (void);
 void pfSetPeriod (int period);
 void pfSetDir (int idx, tMotorDir dir, int dutyCycle);
+
+bool getPanEncA (void);
+bool getPanEncB (void);
+bool getTiltEncA (void);
+bool getTiltEncB (void);
 
 #endif
 

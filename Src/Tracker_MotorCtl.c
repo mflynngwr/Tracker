@@ -11,15 +11,22 @@
 
 #include "Tracker_if.h"
 
-static void setPWMDir (int idx, tMotorDir dir, int dutyCycle); 
-static void testMotorOp (void); 
+static void setPWMDir (int idx, tMotorDir dir, int dutyCycle);
 static void finishMotorOp (void);
+static void encPanAOp (void);
+static void encPanBOp (void);
+static void encTiltAOp (void);
+static void encTiltBOp (void);
 
 static tMotorControl trackerMCtl;
 
-#define TEST_MOTOR_OP
+int cntPan[2] = {0,0};
+int cntTilt[2] = {0,0};
+
+//#define TEST_MOTOR_OP
 #ifdef TEST_MOTOR_OP
-static int testMotorCnt = 0;
+static int testMotorCnt = 0; 
+static void testMotorOp (void); 
 #endif
 
 //*****************************************************************************
@@ -59,6 +66,22 @@ void motorEvent (tEventID event)
    {
       case MotorOpFinish :
          finishMotorOp ();
+         break;
+      
+      case EncPanAOp :
+         encPanAOp ();
+         break;
+      
+      case EncPanBOp :
+         encPanBOp ();
+         break;
+      
+      case EncTiltAOp :
+         encTiltAOp ();
+         break;
+      
+      case EncTiltBOp :
+         encTiltBOp ();
          break;
       
 #ifdef TEST_MOTOR_OP      
@@ -178,6 +201,123 @@ void setPWMDir (int idx, tMotorDir dir, int dutyCycle)
    
 void finishMotorOp (void)
 {
+}
+
+//*****************************************************************************
+//*
+//* encPanAOp
+//* ---
+//*
+//*****************************************************************************
+   
+void encPanAOp (void)
+{   
+   bool tmp = getPanEncB();
+   
+   if (getPanEncA())       // Enc A rising edge
+   {
+      if (tmp)
+      {
+         cntPan[0]--;      // CCW
+      }
+      else 
+      {
+         cntPan[0]++;      // CW
+      }
+   }
+   else
+   {
+      if (tmp) 
+      {
+         cntPan[0]++;      // CW
+      }
+      else 
+      {
+         cntPan[0]--;      // CCW
+      }
+   }
+}
+
+//*****************************************************************************
+//*
+//* encPanBOp
+//* ---
+//*
+//*****************************************************************************
+   
+void encPanBOp (void)
+{  
+   bool tmp = getPanEncA();
+   
+   if (getPanEncB())          // Enc B rising edge
+   {
+      if (tmp) 
+      {
+         cntPan[1]++;      // CCW
+      }
+      else 
+      {
+         cntPan[1]--;          // CW
+      }
+   }
+   else
+   {
+      if (tmp) 
+      {
+         cntPan[1]--;      // CW
+      }
+      else 
+      {
+         cntPan[1]++;          // CCW
+      }
+   }
+}
+
+
+//*****************************************************************************
+//*
+//* encTiltAOp
+//* ---
+//*
+//*****************************************************************************
+   
+void encTiltAOp (void)
+{   
+   bool tmp = getTiltEncB();
+   
+   if (getTiltEncA())         // Enc A rising edge
+   {
+      if (tmp) cntTilt[0]--;     // CCW
+      else cntTilt[0]++;         // CW
+   }
+   else
+   {
+      if (tmp) cntTilt[0]++;     // CW
+      else cntTilt[0]--;         // CCW
+   }
+}
+
+//*****************************************************************************
+//*
+//* encTiltBOp
+//* ---
+//*
+//*****************************************************************************
+   
+void encTiltBOp (void)
+{   
+   bool tmp = getTiltEncA();
+   
+   if (getTiltEncB())         // Enc A rising edge
+   {
+      if (tmp) cntTilt[1]++;     // CCW
+      else cntTilt[1]--;         // CW
+   }
+   else
+   {
+      if (tmp) cntTilt[1]--;     // CW
+      else cntTilt[1]++;         // CCW
+   }
 }
 
 #ifdef TEST_MOTOR_OP

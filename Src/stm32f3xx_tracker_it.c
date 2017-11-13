@@ -9,50 +9,71 @@ extern TIM_HandleTypeDef htim6;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 
-/**
-* @brief This function handles EXTI line0 interrupt.
-*/
+static unsigned int tmpInt = 0;
+
 void EXTI0_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+   EXTI->PR = TILT_ENCODER_A_Pin;
+   queueEvent (EncTiltAOp);
 }
 
-/**
-* @brief This function handles EXTI line1 interrupt.
-*/
 void EXTI1_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
+   EXTI->PR = TILT_ENCODER_B_Pin;
+   queueEvent (EncTiltBOp);
 }
 
-/**
-* @brief This function handles EXTI line2 and Touch Sense controller.
-*/
 void EXTI2_TSC_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+   EXTI->PR = PAN_ENCODER_B_Pin;
+   queueEvent (EncPanBOp);
 }
 
-/**
-* @brief This function handles EXTI line4 interrupt.
-*/
 void EXTI4_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_4);
+   EXTI->PR = PAN_ENCODER_A_Pin;
+   queueEvent (EncPanAOp);
 }
 
-/**
-* @brief This function handles EXTI line[9:5] interrupts.
-*/
 void EXTI9_5_IRQHandler(void)
 {
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_5);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+   // Check Power Button operation
+   if (EXTI->PR & POWER_BTN_Pin)
+   {
+      // Clear the interrupt
+      EXTI->PR = POWER_BTN_Pin;
+      
+      // Check if button up or down
+      tmpInt = POWER_BTN_GPIO_Port->IDR & POWER_BTN_Pin;
+      if (tmpInt)
+      {
+         queueEvent(PowerBtnDown);
+      }
+      else
+      {
+         queueEvent(PowerBtnUp);
+      }
+   }
+   
+   // Check Front Button operation
+   if (EXTI->PR | FRONT_BTN_Pin)
+   {
+      // Clear the interrupt
+      EXTI->PR = FRONT_BTN_Pin;
+      
+      // Check if button up or down
+      tmpInt = FRONT_BTN_GPIO_Port->IDR & FRONT_BTN_Pin;
+      if (tmpInt)
+      {
+         queueEvent(FrontBtnDown);
+      }
+      else
+      {
+         queueEvent(FrontBtnUp);
+      }
+   }
 }
 
-/**
-* @brief This function handles TIM2 global interrupt.
-*/
 void TIM2_IRQHandler(void)
 {
    // Clear the Update interrupt
@@ -63,54 +84,56 @@ void TIM2_IRQHandler(void)
    //HAL_TIM_IRQHandler(&htim2);
 }
 
-/**
-* @brief This function handles SPI2 global interrupt.
-*/
 void SPI2_IRQHandler(void)
 {
   HAL_SPI_IRQHandler(&hspi2);
 }
 
-/**
-* @brief This function handles USART1 global interrupt / USART1 wake-up interrupt through EXTI line 25.
-*/
 void USART1_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&huart1);
 }
 
-/**
-* @brief This function handles USART2 global interrupt.
-*/
 void USART2_IRQHandler(void)
 {
   HAL_UART_IRQHandler(&huart2);
 }
 
-/**
-* @brief This function handles EXTI line[15:10] interrupts.
-*/
 void EXTI15_10_IRQHandler(void)
 {
-  if(__HAL_GPIO_EXTI_GET_IT(GPIO_PIN_13) != RESET)
-  {
-    // Set Test Trigger
-    HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_SET); 
-    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
-    queueEvent (MotorOpTest);
-  }
-  
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);
-  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);
-  
-  // Reset Test Trigger
-  HAL_GPIO_WritePin (FRONT_LED_GPIO_Port, FRONT_LED_Pin, GPIO_PIN_RESET);
+   // Check Red Pine SPI Input Ready interrupt      
+   if(EXTI->PR & RS_SPI_IRQ_Pin)
+   {
+      // Clear SPI input ready interrupt
+      EXTI->PR = RS_SPI_IRQ_Pin;
+     
+      // Queue SPI input read task
+      queueEvent (GPSUpdate);
+   }
+
+   // Check Test Input pin interrupt      
+   if(EXTI->PR & TEST_PT_IN_Pin)
+   {
+      // Clear Test Input Pin interrupt
+      EXTI->PR = TEST_PT_IN_Pin;
+      queueEvent (TestOpTPIn);
+   }
+   
+   // Check Nucleo button operation interrupt (NUCLEO board only)  
+   if(EXTI->PR & NUCLEO_BTN_Pin)
+   {
+      // Clear Nucleo button operation interrupt
+      EXTI->PR = NUCLEO_BTN_Pin;
+     
+      // Check for button down operation
+      tmpInt = NUCLEO_BTN_GPIO_Port->IDR & NUCLEO_BTN_Pin;
+      if (!tmpInt)  // Nucleo button down
+      {
+         queueEvent (MotorOpTest);
+      }
+   }  
 }
 
-/**
-* @brief This function handles TIM6 global interrupt, DAC interrupts.
-*/
 void TIM6_DAC_IRQHandler(void)
 {
   HAL_TIM_IRQHandler(&htim6);

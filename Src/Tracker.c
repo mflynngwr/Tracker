@@ -18,18 +18,13 @@ int main (void)
    
    Tracker_Platform_Init ();
    Tracker_IF_Init ();
-
-//   startPWM ();
    
-//   testEventQ();
-//   testTimers();
-   
-//   startTimer (Debug1, 256, true);
-//   startTimer (Debug2, 768, true);
+   startTimer (Debug1, 1000, true);
+   startTimer (Debug2, 2500, true);
    
    while (1)
-   {      
-      waitEvent(100);
+   {
+      waitEvent(10);
       event = dequeueEvent();
       evtGroup = event & EventGroupMask;
           
@@ -40,6 +35,7 @@ int main (void)
             break;
          
          case MotorOp:
+         case EncoderOp:
             motorEvent (event);
             break;
          

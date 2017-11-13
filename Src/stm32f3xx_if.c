@@ -16,7 +16,6 @@
 #include <stdio.h>
    
 static char stringbuff[100];
-static timeMS lastDebugTime=0;
 
 //*****************************************************************************
 //* 
@@ -28,9 +27,8 @@ static timeMS lastDebugTime=0;
 void debugPrint (char* msg)
 {
    timeMS curTime = getTime();
-   sprintf(stringbuff, "%s (%8.8X) [%d] \n\r", msg, getTime(), curTime-lastDebugTime);
+   sprintf(stringbuff, "%s (%8.8X) [%d] \n\r", msg, getTime(), curTime);
 	HAL_UART_Transmit(&huart2, (uint8_t*)stringbuff, strlen(stringbuff), 0xFFFF);
-   lastDebugTime = curTime;
 }
 
 //*****************************************************************************

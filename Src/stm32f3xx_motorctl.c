@@ -270,3 +270,58 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
    // Disable further timer update interrupts
    htim2.Instance->CR1 |= TIM_CR1_UDIS;
 }
+
+//*****************************************************************************
+//*
+//* getPanEncA
+//* -----
+//*
+//*****************************************************************************
+
+bool getPanEncA (void)
+{   
+   // Configure Motor interface to Power Save Mode Off
+   return PAN_ENCODER_A_GPIO_Port->IDR & PAN_ENCODER_A_Pin;
+}
+
+//*****************************************************************************
+//*
+//* getPanEncB
+//* -----
+//*
+//*****************************************************************************
+
+bool getPanEncB (void)
+{   
+   // Configure Motor interface to Power Save Mode Off
+   return PAN_ENCODER_B_GPIO_Port->IDR & PAN_ENCODER_B_Pin;
+}
+
+//*****************************************************************************
+//*
+//* getTiltEncA
+//* -----
+//*
+//*****************************************************************************
+
+bool getTiltEncA (void)
+{   
+   // Configure Motor interface to Power Save Mode Off
+   return TILT_ENCODER_A_GPIO_Port->IDR & TILT_ENCODER_A_Pin;
+}
+
+
+//*****************************************************************************
+//*
+//* getTiltEncB
+//* -----
+//*
+//*****************************************************************************
+
+bool getTiltEncB (void)
+{   
+   // Configure Motor interface to Power Save Mode Off
+   return TILT_ENCODER_B_GPIO_Port->IDR & TILT_ENCODER_B_Pin;
+}
+
+
